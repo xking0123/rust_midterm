@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 clearscreen = "3.0"
+tabled="0.13.0"

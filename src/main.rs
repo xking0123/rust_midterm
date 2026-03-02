@@ -1,47 +1,62 @@
 use std::io;
 
-//rust midterm- adding ai to tic tac toe
-fn main(){
-    let mut board = [' '; 9];
-    let mut player = 'X';
-    let mut moves = 0;
-
-    clearscreen::clear().expect("failureeeee");
+fn main() {
+    //handles replay logic
     println!("TIC... TAC... TOE... rust edition");
-    println!("Player 1: X and Player 2: O");
+    println!("You are X. AI is O.");
 
     loop {
-        //drawing board
-        println!(" {} | {} | {} ", board[0], board[1], board[2]);
-        println!("-----------");
-        println!(" {} | {} | {} ", board[3], board[4], board[5]);
-        println!("-----------");
-        println!(" {} | {} | {} ", board[6], board[7], board[8]);
+        play_game();
 
-        //getting user input and validating
-        println!("{}, Pick spot 1-9 to make ya move ya goober: ", player);
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let player_choice: usize = input.trim().parse().unwrap_or(0); //.unwrap like .expect?
+        println!("Play again? (Y/N): ");
+        let mut response = String::new();
+        io::stdin().read_line(&mut response).unwrap();
 
-        if player_choice >= 1 && player_choice <= 9 && board[player_choice - 1] == ' ' {
-            board[player_choice - 1] = player;
-            moves += 1;
-        } else if player_choice > 9 || player_choice < 1 {
-            println!("u stupid... try again");
-            continue;
-        } else if board[player_choice - 1] == 'X' || board[player_choice - 1] == 'O' {
-            println!("what u doing... that spot has already been taken... try again");
-            continue;
+        match response.trim().to_lowercase().as_str() {
+            "y" => continue,
+            "n" => {
+                println!("okie... byeeeeee");
+                break;
+            }
+            _ => {
+                println!("idk what u inputted... im heading out...");
+                break;
+            }
         }
+    }
+}
+
+fn play_game() {
+    //runs one round of de game :)
+    let mut board = [' '; 9];
+    let mut player = 'X';
+
+    loop {
+        draw_board(&board);
+
+        let position = if player == 'X' {
+            get_player_input(&board)
+        } else {
+            let ai_choice = ai_move(&board);
+            println!("AI chooses {}", ai_choice);
+            ai_choice
+        };
+
+        board[position - 1] = player;
 
         if check_win(&board, player) {
-            println!("game... over....");
-            reset_game();
+            draw_board(&board);
+            if player == 'X' {
+                println!("YOU WIN?? HOW.");
+            } else {
+                println!("AI wins. As expected.");
+            }
             break;
-        }else if moves == 9{
-            println!("TIE GAME... BAAAANG");
-            reset_game();
+        }
+
+        if is_draw(&board) {
+            draw_board(&board);
+            println!("TIE GAME.");
             break;
         }
 
@@ -49,33 +64,113 @@ fn main(){
     }
 }
 
+fn draw_board(board: &[char; 9]) {
+    println!();
+    println!(" {} | {} | {} ", board[0], board[1], board[2]);
+    println!("-----------");
+    println!(" {} | {} | {} ", board[3], board[4], board[5]);
+    println!("-----------");
+    println!(" {} | {} | {} ", board[6], board[7], board[8]);
+    println!();
+}
+
+fn get_player_input(board: &[char; 9]) -> usize {
+    loop {
+        println!("Pick spot 1-9:");
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+
+        if let Ok(num) = input.trim().parse::<usize>() {
+            if num >= 1 && num <= 9 && board[num - 1] == ' ' {
+                return num;
+            }
+        }
+
+        println!("Invalid move. Try again.");
+    }
+}
+
 fn check_win(b: &[char; 9], p: char) -> bool {
-    //all horizontal wins
-    (b[0] == p && b[1] == p && b[2] == p) || 
-    (b[3] == p && b[4] == p && b[5] == p) || 
+    //horizontal wins
+    (b[0] == p && b[1] == p && b[2] == p) ||
+    (b[3] == p && b[4] == p && b[5] == p) ||
     (b[6] == p && b[7] == p && b[8] == p) ||
-    //all vertical wins
-    (b[0] == p && b[3] == p && b[6] == p) || 
-    (b[1] == p && b[4] == p && b[7] == p) || 
-    (b[2] == p && b[5] == p && b[8] == p) || 
-    //all diagonal wins
-    (b[0] == p && b[4] == p && b[8] == p) || 
+    //vertical wins
+    (b[0] == p && b[3] == p && b[6] == p) ||
+    (b[1] == p && b[4] == p && b[7] == p) ||
+    (b[2] == p && b[5] == p && b[8] == p) ||
+    //diagonal wins
+    (b[0] == p && b[4] == p && b[8] == p) ||
     (b[2] == p && b[4] == p && b[6] == p)
 }
-//tried to do a check_draw, couldn't wrap my head around it fully :(
 
-fn reset_game() {
-    println!("ggs. wanna run it back? (Y/N): ");
-    let mut response = String::new();
-    io::stdin().read_line(&mut response).expect("failureeeee");
-    let trimmed_response = response.trim(); //trimming necessary so input can be read????
+fn is_draw(board: &[char; 9]) -> bool {
+    !board.contains(&' ')
+    //refers to array that drew board. also is our "check_draw" functiom if you will...
+}
 
-    if trimmed_response == "Y" || trimmed_response == "y" {
-        println!("good luck we're running it again");
-        main();
-    } else if trimmed_response == "N" || trimmed_response == "n" {
-        println!("okie... byeeeeee")
+// [char; 9] array of 9 characters actually stored in computers memory (direct ownership of array?) when you call this you outright move array from one spot to another?
+// &[char; 9] reference (borrow) to array on 9 characters. when this is called, passing in a pointer to the array instead of setting one up to hard store data in memory-mainly just prooviding a way to look at array.
+
+//to allow ai to pick best possible move
+fn ai_move(board: &[char; 9]) -> usize {
+    let mut best_score = i32::MIN;
+    let mut best_move = 0;
+    let mut board_copy = *board;
+
+    for i in 0..9 {
+        if board_copy[i] == ' ' {
+            board_copy[i] = 'O';
+            let score = minimax(&mut board_copy, false, 0);
+            board_copy[i] = ' ';
+
+            if score > best_score {
+                best_score = score;
+                best_move = i;
+            }
+        }
+    }
+
+    best_move + 1
+}
+
+fn minimax(board: &mut [char; 9], is_maximizing: bool, depth: i32) -> i32 {
+    if check_win(board, 'O') {
+        return 10 - depth;
+    }
+    if check_win(board, 'X') {
+        return depth - 10;
+    }
+    if is_draw(board) {
+        return 0;
+    }
+
+    if is_maximizing {
+        let mut best_score = i32::MIN;
+
+        for i in 0..9 {
+            if board[i] == ' ' {
+                board[i] = 'O';
+                let score = minimax(board, false, depth + 1);
+                board[i] = ' ';
+                best_score = best_score.max(score);
+            }
+        }
+
+        best_score
     } else {
-        println!("bye bye");
+        let mut best_score = i32::MAX;
+
+        for i in 0..9 {
+            if board[i] == ' ' {
+                board[i] = 'X';
+                let score = minimax(board, true, depth + 1);
+                board[i] = ' ';
+                best_score = best_score.min(score);
+            }
+        }
+
+        best_score
     }
 }
